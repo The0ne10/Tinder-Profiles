@@ -1,0 +1,20 @@
+env: "local"
+
+http:
+  address: ":8080"
+  timeout: "5s"
+  time_idle: "30s"
+
+storage:
+  DB_HOST: "localhost"
+  DB_PORT: 5432
+  DB_USER: "dev"
+  DB_PASSWORD: "dev"
+  DB_NAME: "dev"
+
+minio:
+  HOST: "localhost"
+  PORT: 9000
+  USER: "minio"
+  PASSWORD: "minio123"
+  BUCKET: "my-bucket"

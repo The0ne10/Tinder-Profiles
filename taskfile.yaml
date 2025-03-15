@@ -1,0 +1,49 @@
+version: 3
+
+env:
+  CONFIG_PATH: "{{.USER_WORKING_DIR}}/app/configs/local.yaml"
+  GOOSE_DRIVER: "postgres"
+  GOOSE_DBSTRING: "user=dev password=dev dbname=dev host=localhost port=5432 sslmode=disable"
+  GOOSE_MIGRATION_DIR: "{{.USER_WORKING_DIR}}//database/migrations"
+
+  DIR: "-dir {{.GOOSE_MIGRATION_DIR}}"
+
+tasks:
+  # Локальный запуск без докера
+  run:
+    desc: "Запуск приложения без докера"
+    cmds:
+      - go run ./app/cmd/app/main.go
+
+  # Докер образы
+  run:no-cache:
+    desc: "Запуск приложения из под докера без кеша"
+    cmds:
+      - docker compose -f {{.USER_WORKING_DIR}}/docker/local/docker-compose.yml build --no-cache
+      - docker compose -f {{.USER_WORKING_DIR}}/docker/local/docker-compose.yml up
+
+  run:docker:
+    desc: "Запуск приложения из под докера"
+    cmds:
+      - docker compose -f {{.USER_WORKING_DIR}}/docker/local/docker-compose.yml up
+
+  # База данных и aws s3
+  run:db:
+    desc: "Запуск базы данных и aws S3 в контейнере"
+    cmds:
+      - docker compose -f {{.USER_WORKING_DIR}}/docker/local/docker-compose-db.yml up -d
+
+  make:migration:
+    desc: "Создать миграцию"
+    cmds:
+      - goose -dir "{{.GOOSE_MIGRATION_DIR}}" create "{{.name}}" sql
+
+  migrate:
+    desc: "Применить миграции"
+    cmds:
+      - goose -dir "{{.GOOSE_MIGRATION_DIR}}" up
+
+  migrate:status:
+    desc: "Дамп статус миграций"
+    cmds:
+      - goose -dir "{{.GOOSE_MIGRATION_DIR}}" status
