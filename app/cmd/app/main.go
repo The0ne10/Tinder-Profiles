@@ -7,6 +7,8 @@ import (
 	"context"
 	"log/slog"
 	"os"
+	"os/signal"
+	"syscall"
 	"time"
 )
 
@@ -21,36 +23,49 @@ func main() {
 	cfg := config.MustLoad()
 
 	// Подключение логгирования
-	log := setupLogger(cfg.Env)
+	logger := setupLogger(cfg.Env)
 
 	// Запуск контекста
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
 
-	log.Info("Показ конфига",
+	logger.Info("Показ конфига",
 		"Config", cfg,
 		"Storage", cfg.Storage,
 		"Minio", cfg.Minio,
 	)
 
-	log.Info("Логирование запущено...")
+	logger.Info("Логирование запущено...")
 
 	if cfg.Env == LocalEnv {
-		log.Debug("Логгер дебаг запущен...")
+		logger.Debug("Логгер дебаг запущен...")
 	}
 
 	// Подключения базы данных
-	dbpool, err := postgres.NewStorage(ctx, log, cfg)
+	db, err := postgres.NewStorage(ctx, logger, cfg)
 	if err != nil {
-		log.Error("Не удалось подключиться к базе данных", "err", err)
+		logger.Error("Не удалось подключиться к базе данных", "err", err)
 		os.Exit(1)
 	}
+	defer db.Close()
 
-	// Запуск основного приложения
-	application := app.NewApp(ctx, cfg, log, dbpool)
-	if err := application.Run(); err != nil {
-		log.Error("Ошибка запуска сервера %v", err)
-	}
+	// Создание и запуск приложения
+	application := app.NewApp(ctx, cfg, logger, db)
+	go func() {
+		if err = application.Run(); err != nil {
+			logger.Error("Ошибка при запуске приложения", slog.String("error", err.Error()))
+			cancel()
+		}
+	}()
+
+	// Ожидание сигнала для завершения
+	sigChan := make(chan os.Signal, 1)
+	signal.Notify(sigChan, syscall.SIGINT, syscall.SIGTERM)
+	<-sigChan
+
+	// Остановка приложения
+	application.Stop()
+	logger.Info("Приложение остановлено")
 }
 
 func setupLogger(env string) *slog.Logger {

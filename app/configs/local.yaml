@@ -5,6 +5,9 @@ http:
   timeout: "5s"
   time_idle: "30s"
 
+grpc:
+  address: ":55032"
+
 storage:
   DB_HOST: "localhost"
   DB_PORT: 5432

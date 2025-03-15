@@ -8,6 +8,7 @@ import (
 
 type Config struct {
 	Env string `yaml:"env" env-default:"local"`
+	GRPC
 	HTTP
 	Storage
 	Minio
@@ -17,6 +18,10 @@ type HTTP struct {
 	Address  string        `yaml:"address" env-required:"true"`
 	TimeOut  time.Duration `yaml:"timeout" env-required:"true"`
 	TimeIdle time.Duration `yaml:"time_idle" env-required:"true"`
+}
+
+type GRPC struct {
+	Address string `yaml:"address" env-required:"true"`
 }
 
 type Storage struct {
