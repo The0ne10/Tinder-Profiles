@@ -27,6 +27,11 @@ tasks:
     cmds:
       - docker compose -f {{.USER_WORKING_DIR}}/docker/local/docker-compose.yml up
 
+  docker:stop:
+    desc: "Оставновить все контейнеры"
+    cmds:
+      - docker stop $(docker ps -aq)
+
   # База данных и aws s3
   run:db:
     desc: "Запуск базы данных и aws S3 в контейнере"
