@@ -2,11 +2,12 @@ package grpcapp
 
 import (
 	"Profiles/app/internal/config"
+	profileRepository "Profiles/app/internal/repository/profile_repository"
 	"Profiles/app/internal/services"
-	helloService "Profiles/app/internal/services/hello_service"
+	profileService "Profiles/app/internal/services/profile_service"
 	"context"
 	"fmt"
-	pb "github.com/The0ne10/myTinderProto/hello_service/proto"
+	pb "github.com/The0ne10/myTinderProto/profile_service/proto"
 	"github.com/jackc/pgx/v5/pgxpool"
 	"google.golang.org/grpc"
 	"log/slog"
@@ -50,9 +51,12 @@ func (a *App) Run() error {
 		return fmt.Errorf("%s: %w", op, err)
 	}
 
-	a.logger.Info("gRPC сервер запущен", slog.String("address", a.cfg.GRPC.Address))
+	// Регистрация маршрутов
+	pb.RegisterProfileServiceServer(a.server, profileService.New(
+		a.ctx, a.logger, profileRepository.New(a.ctx, a.logger, a.db)),
+	)
 
-	pb.RegisterHelloServiceServer(a.server, helloService.New())
+	a.logger.Info("gRPC сервер запущен", slog.String("address", a.cfg.GRPC.Address))
 
 	return a.server.Serve(lis)
 }
